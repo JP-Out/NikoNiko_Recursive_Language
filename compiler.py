@@ -25,8 +25,14 @@ reserved_keywords = {
     "dewa nai": "not"           # Representa o operador lógico `not`
 }
 
+# Dicionário da Tabela de Simbolos do código
+simbols = {}
+
 delimiters = {' ','=',';','{','}','[',']', '(', ')', '"'}
 operators = {'=', '+', '-', '*', '/'}
+
+def get_id_by_value(s_value, dict): # Pega o id do dicionario pelo seu valor
+    return [i for i, (index, value) in enumerate(dict.items()) if value == s_value]
 
 def is_reserved_keyword(string):
     """
@@ -95,7 +101,7 @@ def read_file(file_path):
         return []
 
 
-def analyze_line(lines):
+def scanner(lines):
     """
     Analisa uma lista de linhas de código, tokenizando elementos e verificando 
     erros sintáticos básicos, como a ausência de um ponto e vírgula (';') no final da linha.
@@ -145,6 +151,38 @@ def analyze_line(lines):
     return tokens
 
 
+def lexical(tokens):
+    """
+    Gera uma lista de tokens no formato '<token-name, índice>' para cada token reservado.
+
+    Args:
+        tokens (list of str): A lista de tokens a ser processada.
+
+    Returns:
+        list of str: Uma lista de strings, onde cada string representa um token
+                     no formato '<token-name, índice>'.
+    """
+    new_index = 0 # Cria um novo indice 
+    lexical_token = []  # Lista para armazenar os tokens formatados
+    for i, token in enumerate(tokens):
+        if (is_reserved_keyword(token) or token in delimiters or token in operators or token.isdigit() or isinstance(token, (int, float))):  # Se for uma palavra reservada, delimitador, operador, número, ou tipo numérico          
+            expr = f'<{token}, {i}>'
+            lexical_token.append(expr)
+        elif token:
+            if simbols.items(): # se tiver algo no array
+                for index in simbols.keys(): # Percorre todos os indices
+                    new_index = index + 1 # Se ja existir indice no dicionario, então adiciona um novo
+            elif token in simbols.values(): # Se algum token ja estiver na "Tabela/Dicionário de Simbolos"
+                # Pegar o id desse token especifico
+                # adicionar na lista `lexical_token` esse id novamente
+                ...
+            simbols[new_index] = token # Cria um novo valor na "Tabela/Dicionário de Simbolos"        
+            expr = f'<{i}, {new_index}>'
+            lexical_token.append(expr) # Adiciona a expressão na lista
+    print(f"DICIONARIO: {simbols}")
+    return lexical_token
+
+
 def report_error(message):
     """
     Exibe ou registra uma mensagem de erro durante a análise do código.
@@ -158,9 +196,13 @@ def report_error(message):
     """
     print(f"Erro: {message}")
        
-          
+# Caminhos          
 file_path_input = "io/input.niko"
 file_path_lexical = "io/lexical.txt"
-lines = read_file(file_path_input)
-token_code = analyze_line(lines)
-write_to_file(token_code, file_path_lexical)
+
+# Chamadas
+lines = read_file(file_path_input) # Lê o "codigo" de entrada
+token_code = scanner(lines) # Processa cada linha
+lexical_code = lexical(token_code) # Transforma na expressão lexical
+
+write_to_file(lexical_code, file_path_lexical)
