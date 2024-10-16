@@ -1,3 +1,5 @@
+import stack_functions
+
 # Dicionário de palavras-chave e seus equivalentes em Python
 reserved_keywords = {
     "mein": "main",             # Marca o início do programa `main`
@@ -31,8 +33,25 @@ simbols = {}
 delimiters = {' ','=',';','{','}','[',']', '(', ')', '"'}
 operators = {'=', '+', '-', '*', '/'}
 
-def get_id_by_value(s_value, dict): # Pega o id do dicionario pelo seu valor
-    return [i for i, (index, value) in enumerate(dict.items()) if value == s_value]
+def get_id_by_value(token_value, dict):
+    """
+    Retorna o índice correspondente ao valor fornecido em um dicionário.
+
+    Args:
+        token_value (str): O valor do token que se deseja encontrar.
+        dict (dict): O dicionário onde o valor será procurado.
+
+    Returns:
+        list of int: Uma lista contendo os índices das chaves no dicionário onde 
+                     o valor corresponde ao `token_value`. Retorna uma lista vazia 
+                     se o valor não for encontrado.
+                     
+    Comportamento:
+        - Itera sobre o dicionário e verifica se algum valor corresponde ao `token_value` fornecido.
+        - Para cada ocorrência, adiciona o índice correspondente a uma lista e a retorna.
+    """
+    return [i for i, (index, value) in enumerate(dict.items()) if value == token_value]
+
 
 def is_reserved_keyword(string):
     """
@@ -49,8 +68,9 @@ def is_reserved_keyword(string):
         - Retorna True se houver uma correspondência, indicando que a string é uma palavra reservada.
     """
     if string in reserved_keywords:
-       return True 
+       return True
     return False
+
 
 def write_to_file(content_list, file_path):
     """
@@ -116,70 +136,89 @@ def scanner(lines):
         - Para cada linha, separa tokens com base em delimitadores e operadores.
         - Gera uma mensagem de erro caso o último caractere de uma linha não seja um ponto e vírgula (';').
     """
-    tokens = [] # Lista com os tokens
+    tokens = []
     token = ""
     is_delimiter = False
-
-    for line in lines:
-        line_lenght = len(line.strip())
+    brackets = {'(': ')', '[': ']', '{': '}', '"': '"'}
+    stack = []
+    
+    for line_num, line in enumerate(lines, start=1):
+        line_length = len(line.strip())
         
         for i, char in enumerate(line):
-            is_last_char = i == line_lenght - 1
+            is_last_char = i == line_length - 1
             
             if char in delimiters or char in operators:
-                is_delimiter = True # O caracter atual é um delimitador
-                if token: # Se tiver algo no token
+                is_delimiter = True
+                if token:
                     tokens.append(token)
                     token = ""
-            elif(is_delimiter):
+                if char in brackets:
+                    stack.append((char, line_num, i))  # Armazena o char, linha e posição
+                elif char in brackets.values():
+                    if stack and brackets.get(stack[-1][0]) == char: # [-1] acessa a ultima tupla da pilha, e 0 o primeiro item da tupla
+                        stack.pop()  # Remove par correspondente
+                    else:
+                        report_error(f"Delimitador inesperado '{char}' em linha {line_num}, coluna {i + 1}.")
+            elif is_delimiter:
                 tokens.append(token)
                 token = ""
                 is_delimiter = False
                 
-            if is_last_char and char != ';': # Se for o caracter final e não for `;`
-                report_error(f"';' esperado no final da linha, encontrado '{char}'")
+            if is_last_char and char != ';':
+                report_error(f"';' esperado no final da linha {line_num}, encontrado '{char}'.")
                 
-            token += char # Enquanto `char` não for um delimitador ou operador, continua adicionando
-            
+            token += char
+        
         if token:
             tokens.append(token)
             token = ""
           
-    # Remove tokens que são apenas espaços ou quebras de linha
     tokens = [t.strip() for t in tokens if t.strip()]
     
+    # Finaliza verificando se há delimitadores abertos não fechados
+    if stack:
+        for open_char, line_num, pos in stack:
+            report_error(f"Delimitador '{open_char}' aberto na linha {line_num}, coluna {pos + 1} não foi fechado.")
+    
     return tokens
-
-
+        
 def lexical(tokens):
     """
-    Gera uma lista de tokens no formato '<token-name, índice>' para cada token reservado.
+    Gera uma lista de tokens no formato '<token-name, índice>' ou '<índice, token-id>'
+    para cada token encontrado, dependendo se é um token reservado ou um símbolo.
 
     Args:
         tokens (list of str): A lista de tokens a ser processada.
 
     Returns:
         list of str: Uma lista de strings, onde cada string representa um token
-                     no formato '<token-name, índice>'.
+                     no formato '<token-name, índice>' ou '<índice, token-id>'.
     """
-    new_index = 0 # Cria um novo indice 
+    new_index = 0  # Índice para novos tokens na tabela de símbolos
     lexical_token = []  # Lista para armazenar os tokens formatados
+    
     for i, token in enumerate(tokens):
-        if (is_reserved_keyword(token) or token in delimiters or token in operators or token.isdigit() or isinstance(token, (int, float))):  # Se for uma palavra reservada, delimitador, operador, número, ou tipo numérico          
+        # Se o token é reservado, operador, delimitador, ou número
+        if is_reserved_keyword(token) or token in delimiters or token in operators or token.isdigit() or isinstance(token, (int, float)):
             expr = f'<{token}, {i}>'
             lexical_token.append(expr)
+
+        # Caso o token não seja reservado, é tratado como um símbolo
         elif token:
-            if simbols.items(): # se tiver algo no array
-                for index in simbols.keys(): # Percorre todos os indices
-                    new_index = index + 1 # Se ja existir indice no dicionario, então adiciona um novo
-            elif token in simbols.values(): # Se algum token ja estiver na "Tabela/Dicionário de Simbolos"
-                # Pegar o id desse token especifico
-                # adicionar na lista `lexical_token` esse id novamente
-                ...
-            simbols[new_index] = token # Cria um novo valor na "Tabela/Dicionário de Simbolos"        
-            expr = f'<{i}, {new_index}>'
-            lexical_token.append(expr) # Adiciona a expressão na lista
-    print(f"DICIONARIO: {simbols}")
+            # Se a tabela de símbolos não estiver vazia, definir o próximo índice
+            if simbols:
+                new_index = max(simbols.keys()) + 1  # Define o novo índice baseado no maior valor existente
+            # Se o token já existe na tabela, pegar o índice dele
+            if token in simbols.values():
+                curr_index = get_id_by_value(token, simbols)[0]  # Pega o índice existente
+                expr = f'<TS[{curr_index}], {i}>'
+            else:
+                simbols[new_index] = token  # Adiciona um novo símbolo na tabela
+                expr = f'<TS[{new_index}], {i}>'
+            lexical_token.append(expr)  # Adiciona o token formatado à lista
+
+    print(f"Tabela de Símbolos: {simbols}")        
     return lexical_token
 
 
@@ -195,6 +234,7 @@ def report_error(message):
         - Pode ser adaptada para registrar erros em uma lista ou arquivo, dependendo da necessidade.
     """
     print(f"Erro: {message}")
+  
        
 # Caminhos          
 file_path_input = "io/input.niko"
