@@ -1,3 +1,1 @@
-seisuu num = 10;
-
-hyouji(num);
+hyouji("Testando o print");

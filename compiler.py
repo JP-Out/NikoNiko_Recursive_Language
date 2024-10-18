@@ -145,7 +145,9 @@ def scanner(lines):
     for line_num, line in enumerate(lines, start=1):
         line_length = len(line.strip())
         
-        for i, char in enumerate(line):
+        i = 0  # Inicializa o índice fora do loop
+        while i < len(line):
+            char = line[i]
             is_last_char = i == line_length - 1
             
             if char in delimiters or char in operators:
@@ -156,10 +158,11 @@ def scanner(lines):
                 if char in brackets:
                     stack.append((char, line_num, i))  # Armazena o char, linha e posição
                 elif char in brackets.values():
-                    if stack and brackets.get(stack[-1][0]) == char: # [-1] acessa a ultima tupla da pilha, e 0 o primeiro item da tupla
+                    if stack and brackets.get(stack[-1][0]) == char:
                         stack.pop()  # Remove par correspondente
                     else:
-                        report_error(f"Delimitador inesperado '{char}' em linha {line_num}, coluna {i + 1}.")
+                        report_error(f"Delimitador inesperado '{char}' em linha {line_num}, coluna {i + 1}.")            
+                
             elif is_delimiter:
                 tokens.append(token)
                 token = ""
@@ -167,8 +170,21 @@ def scanner(lines):
                 
             if is_last_char and char != ';':
                 report_error(f"';' esperado no final da linha {line_num}, encontrado '{char}'.")
-                
-            token += char
+
+            # Verifica se o último item da pilha é aspas duplas e percorre a partir do índice atual
+            if stack and stack[-1][0] == '"':
+                i += 1  # Avança o índice para evitar repetição
+                while i < len(line):
+                    this_char = line[i]
+                    token += this_char
+                    if this_char == '"':  # Fechou aspas duplas
+                        stack.pop()  # Remove da pilha
+                        break
+                    i += 1
+            else:
+                token += char
+            
+            i += 1  # Incrementa o índice no final do loop
         
         if token:
             tokens.append(token)
@@ -182,6 +198,7 @@ def scanner(lines):
             report_error(f"Delimitador '{open_char}' aberto na linha {line_num}, coluna {pos + 1} não foi fechado.")
     
     return tokens
+
         
 def lexical(tokens):
     """
