@@ -1,5 +1,5 @@
-from keywords import reserved_keywords
-from utils import read_file, write_to_file, report_error
+from imports.keywords import reserved_keywords
+from imports.utils import read_file, write_to_file, report_error
 
 
 
