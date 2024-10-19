@@ -1,29 +1,52 @@
 from keywords import reserved_keywords
+from utils import read_file, write_to_file, report_error
 
-# Dicionário da Tabela de Simbolos do código
-simbols = {}
+
 
 delimiters = {' ','=',';','{','}','[',']', '(', ')', '"'}
 operators = {'=', '+', '-', '*', '/'}
 
-def get_id_by_value(token_value, dict):
-    """
-    Retorna o índice correspondente ao valor fornecido em um dicionário.
+class SymbolTable:
+    def __init__(self):
+        self.symbols = {}  # Dicionário para armazenar símbolos
+        self.next_index = 0  # Controle do próximo índice
 
-    Args:
-        token_value (str): O valor do token que se deseja encontrar.
-        dict (dict): O dicionário onde o valor será procurado.
+    def add(self, symbol):
+        """
+        Adiciona um símbolo à tabela se ele ainda não existir. 
+        Retorna o índice do símbolo na tabela.
 
-    Returns:
-        list of int: Uma lista contendo os índices das chaves no dicionário onde 
-                     o valor corresponde ao `token_value`. Retorna uma lista vazia 
-                     se o valor não for encontrado.
-                     
-    Comportamento:
-        - Itera sobre o dicionário e verifica se algum valor corresponde ao `token_value` fornecido.
-        - Para cada ocorrência, adiciona o índice correspondente a uma lista e a retorna.
-    """
-    return [i for i, (index, value) in enumerate(dict.items()) if value == token_value]
+        Args:
+            symbol (str): O símbolo a ser adicionado ou verificado.
+
+        Returns:
+            int: O índice do símbolo na tabela.
+        """
+        # Verifica se o símbolo já está na tabela de símbolos
+        if symbol not in self.symbols.values():
+            self.symbols[self.next_index] = symbol
+            self.next_index += 1  # Incrementa o índice para o próximo símbolo
+
+        return self.get_id_by_value(symbol)
+
+    def get_id_by_value(self, value):
+        """
+        Retorna o índice correspondente ao valor fornecido na tabela de símbolos.
+
+        Args:
+            value (str): O valor do símbolo a ser procurado.
+
+        Returns:
+            int: O índice do símbolo correspondente ou None se não encontrado.
+        """
+        for key, val in self.symbols.items():
+            if val == value:
+                return key
+        return None
+
+    def __repr__(self):
+        return f"Tabela de Símbolos: {self.symbols}"
+
 
 
 def is_double_quote(char):
@@ -59,56 +82,6 @@ def is_reserved_keyword(string):
         - Retorna True se houver uma correspondência, indicando que a string é uma palavra reservada.
     """
     return string in reserved_keywords
-
-
-
-def write_to_file(content_list, file_path):
-    """
-    Escreve o conteúdo fornecido em um arquivo, sobrescrevendo qualquer conteúdo existente.
-
-    Args:
-        content (str): O texto que será escrito no arquivo.
-        file_path (str): O caminho do arquivo onde o conteúdo será salvo.
-
-    Comportamento:
-        - Abre o arquivo especificado no modo de escrita ('w'), que sobrescreve o conteúdo existente.
-        - Grava o conteúdo fornecido no arquivo.
-    """
-    try:
-        with open(file_path, 'w', encoding='utf-8') as file:
-            file.write("\n".join(content_list))
-        print(f"Conteúdo gravado com sucesso em '{file_path}'.")
-    except IOError:
-        print(f"Erro: Não foi possível escrever no arquivo '{file_path}'.")
-
-
-def read_file(file_path):
-    """
-    Lê o conteúdo de um arquivo e retorna uma lista de linhas.
-
-    Args:
-        file_path (str): O caminho para o arquivo a ser lido.
-
-    Returns:
-        list of str: Uma lista de strings, onde cada string representa uma linha do arquivo.
-                     Retorna uma lista vazia se o arquivo não for encontrado ou se ocorrer um erro de leitura.
-
-    Comportamento:
-        - Tenta abrir o arquivo no modo de leitura ('r') com codificação UTF-8.
-        - Retorna o conteúdo do arquivo como uma lista de linhas.
-        - Imprime uma mensagem de erro e retorna uma lista vazia se o arquivo não for encontrado (FileNotFoundError) 
-          ou se houver um problema na leitura (IOError).
-    """
-    try:
-        with open(file_path, 'r', encoding='utf-8') as file:
-            lines = file.readlines()
-        return lines
-    except FileNotFoundError:
-        print(f"Erro: O arquivo '{file_path}' não foi encontrado.")
-        return []
-    except IOError:
-        print(f"Erro: Não foi possível ler o arquivo '{file_path}'.")
-        return []
 
 
 def scanner(lines):
@@ -203,7 +176,7 @@ def lexical(tokens):
         list of str: Uma lista de strings, onde cada string representa um token
                      no formato '<token-name, índice>' ou '<índice, token-id>'.
     """
-    new_index = 0  # Índice para novos tokens na tabela de símbolos
+    symbol_table = SymbolTable()
     lexical_token = []  # Lista para armazenar os tokens formatados
     
     for i, token in enumerate(tokens):
@@ -214,34 +187,12 @@ def lexical(tokens):
 
         # Caso o token não seja reservado, é tratado como um símbolo
         elif token:
-            # Se a tabela de símbolos não estiver vazia, definir o próximo índice
-            if simbols:
-                new_index = max(simbols.keys()) + 1  # Define o novo índice baseado no maior valor existente
-            # Se o token já existe na tabela, pegar o índice dele
-            if token in simbols.values():
-                curr_index = get_id_by_value(token, simbols)[0]  # Pega o índice existente
-                expr = f'<TS[{curr_index}], {i}>'
-            else:
-                simbols[new_index] = token  # Adiciona um novo símbolo na tabela
-                expr = f'<TS[{new_index}], {i}>'
+            symbol_index = symbol_table.add(token) # Adiciona o símbolo à tabela e pega o índice
+            expr = f'<TS[{symbol_index}], {i}>'
             lexical_token.append(expr)  # Adiciona o token formatado à lista
 
-    print(f"Tabela de Símbolos: {simbols}")        
+    print(f"Tabela de Símbolos: {symbol_table}")        
     return lexical_token
-
-
-def report_error(message):
-    """
-    Exibe ou registra uma mensagem de erro durante a análise do código.
-
-    Args:
-        message (str): A mensagem de erro a ser exibida, descrevendo o tipo e a localização do erro.
-
-    Comportamento:
-        - Recebe uma mensagem de erro como string e a imprime diretamente no console.
-        - Pode ser adaptada para registrar erros em uma lista ou arquivo, dependendo da necessidade.
-    """
-    print(f"Erro: {message}")
   
        
 # Caminhos          
