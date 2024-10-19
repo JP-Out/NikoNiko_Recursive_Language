@@ -1,31 +1,4 @@
-import stack_functions
-
-# Dicionário de palavras-chave e seus equivalentes em Python
-reserved_keywords = {
-    "mein": "main",             # Marca o início do programa `main`
-    "modoru": "return",         # Retorna um valor `return`
-    "hyouji": "print",          # Imprime o texto `print`
-    "nyuuryoku": "input",       # Lê o texto de entrada `input`
-    "moshi": "if",              # Início de uma estrutura condicional `if`
-    "sore igai": "else",        # Alternativa na estrutura condicional `else`
-    "kurikaeshi": "for",        # Início de uma estrutura de repetição `for`
-    "kokoromiru": "while",      # Início de uma estrutura de repetição `while`
-
-    # Tipos de dados
-    "seisuu": "int",            # Representa números inteiros `int`
-    "shousuu": "float",         # Representa números decimais `float`
-    "mojiretsu": "str",         # Representa sequências de caracteres `str`
-    "shingi": "bool",           # Representa valores verdadeiro/falso `bool`
-    # "mu": "None",               # Representa uma função que não retorna valor `None`
-    # "nuru": "None",             # Representa um valor nulo `None`
-    "shin": "True",             # Representa o valor verdadeiro `True`
-    "gi": "False",              # Representa o valor falso `False`
-
-    # Operadores Lógicos
-    "katsu": "and",             # Representa o operador lógico `and`
-    "mata wa": "or",            # Representa o operador lógico `or`
-    "dewa nai": "not"           # Representa o operador lógico `not`
-}
+from keywords import reserved_keywords
 
 # Dicionário da Tabela de Simbolos do código
 simbols = {}
@@ -53,6 +26,24 @@ def get_id_by_value(token_value, dict):
     return [i for i, (index, value) in enumerate(dict.items()) if value == token_value]
 
 
+def is_double_quote(char):
+    """
+    Verifica se o caractere fornecido é uma string delimitada por aspas duplas.
+
+    Args:
+        char (str): A string a ser verificada.
+
+    Returns:
+        bool: Retorna True se a string começar e terminar com aspas duplas, 
+              caso contrário, retorna False.
+
+    Comportamento:
+        - A função verifica se o primeiro e o último caracteres da string fornecida 
+          são aspas duplas (").
+    """
+    return char.startswith('"') and char.endswith('"')
+
+ 
 def is_reserved_keyword(string):
     """
     Verifica se uma determinada string é uma palavra-chave reservada na linguagem de programação.
@@ -67,9 +58,8 @@ def is_reserved_keyword(string):
         - Compara a string fornecida com uma lista ou conjunto de palavras-chave reservadas.
         - Retorna True se houver uma correspondência, indicando que a string é uma palavra reservada.
     """
-    if string in reserved_keywords:
-       return True
-    return False
+    return string in reserved_keywords
+
 
 
 def write_to_file(content_list, file_path):
@@ -145,7 +135,7 @@ def scanner(lines):
     for line_num, line in enumerate(lines, start=1):
         line_length = len(line.strip())
         
-        i = 0  # Inicializa o índice fora do loop
+        i = 0  # Inicializando o índice
         while i < len(line):
             char = line[i]
             is_last_char = i == line_length - 1
@@ -174,6 +164,7 @@ def scanner(lines):
             # Verifica se o último item da pilha é aspas duplas e percorre a partir do índice atual
             if stack and stack[-1][0] == '"':
                 i += 1  # Avança o índice para evitar repetição
+                token += char # Adiciona a primeira " já ao token
                 while i < len(line):
                     this_char = line[i]
                     token += this_char
@@ -184,7 +175,7 @@ def scanner(lines):
             else:
                 token += char
             
-            i += 1  # Incrementa o índice no final do loop
+            i += 1  # Incrementando o índice
         
         if token:
             tokens.append(token)
@@ -199,7 +190,7 @@ def scanner(lines):
     
     return tokens
 
-        
+ 
 def lexical(tokens):
     """
     Gera uma lista de tokens no formato '<token-name, índice>' ou '<índice, token-id>'
@@ -217,7 +208,7 @@ def lexical(tokens):
     
     for i, token in enumerate(tokens):
         # Se o token é reservado, operador, delimitador, ou número
-        if is_reserved_keyword(token) or token in delimiters or token in operators or token.isdigit() or isinstance(token, (int, float)):
+        if is_reserved_keyword(token) or is_double_quote(token) or token in delimiters or token in operators or token.isdigit() or isinstance(token, (int, float)):
             expr = f'<{token}, {i}>'
             lexical_token.append(expr)
 
