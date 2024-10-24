@@ -21,7 +21,7 @@ def main():
     token_code = scanner.scan(lines)
     
     # Processa tokens pra gerar a análise lexical
-    lexical_code = lexical(token_code)
+    lexical_code = lexical(token_code, delimiters, operators)
     
     # Escreve o código lexical no arquivo de saída
     write_to_file(lexical_code, file_path_lexical)

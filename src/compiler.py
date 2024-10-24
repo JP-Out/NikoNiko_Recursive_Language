@@ -176,7 +176,7 @@ def is_reserved_keyword(string):
     return string in reserved_keywords
 
  
-def lexical(tokens):
+def lexical(tokens, delimiters, operators):
     """
     Gera uma lista de tokens no formato '<token-name, índice>' ou '<índice, token-id>'
     para cada token encontrado, dependendo se é um token reservado ou um símbolo.
