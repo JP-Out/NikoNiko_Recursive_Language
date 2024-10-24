@@ -2,7 +2,7 @@ from imports.utils import read_file, write_to_file
 from src.compiler import Scanner, lexical
 
 # Definir delimitadores e operadores usados na linguagem
-delimiters = {' ', '=', ';', '{', '}', '[', ']', '(', ')', '"'}
+delimiters = {' ', '=', ';', '{', '}', '[', ']', '(', ')', '"', '#'}
 operators = {'=', '+', '-', '*', '/'}
 
 

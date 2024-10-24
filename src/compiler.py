@@ -1,9 +1,6 @@
 from imports.keywords import reserved_keywords
 from imports.utils import report_error
 
-delimiters = {' ','=',';','{','}','[',']', '(', ')', '"'}
-operators = {'=', '+', '-', '*', '/'}
-
 class SymbolTable:
     def __init__(self):
         self.symbols = {}  # Dicionário para armazenar símbolos
@@ -87,7 +84,7 @@ class Scanner:
                 if char in self.brackets:
                     self.stack.append((char, line_num, i))  # Armazena o char, linha e posição
                 elif char in self.brackets.values():
-                    if self.stack and self.brackets.get(self.stack[-1][0]) == char:
+                    if self.stack and self.brackets.get(self.stack[-1][0]) == char: # [-1] acessa a ultima tupla da pilha, e [0] o primeiro item da tupla
                         self.stack.pop()  # Remove o par correspondente
                     else:
                         report_error(f"Delimitador inesperado '{char}' em linha {line_num}, coluna {i + 1}.")            
